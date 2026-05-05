@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allenamento</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1c1f26;--surface:#252930;--surface2:#2e333d;--border:#383d48;
+  --text:#eef0f4;--sub:#8b9099;--accent:#60a5fa;--accent-dim:rgba(96,165,250,0.12);
+  --green:#4ade80;--green-dim:rgba(74,222,128,0.12);--red:#f87171;
+  --orange:#fb923c;--orange-dim:rgba(251,146,60,0.12);
+  --purple:#c084fc;--purple-dim:rgba(192,132,252,0.12);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;padding-bottom:2rem}
+
+.header{padding:1.4rem 1.2rem 1rem}
+.header h1{font-size:1.3rem;font-weight:600;letter-spacing:-0.01em}
+.header p{font-size:0.78rem;color:var(--sub);margin-top:0.2rem}
+
+.tabs{display:flex;gap:0.5rem;padding:0 1.2rem 1rem;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:52px;padding:0.55rem 0.4rem;text-align:center;font-family:'DM Mono',monospace;font-size:0.68rem;font-weight:500;color:var(--sub);background:var(--surface);border:none;border-radius:8px;cursor:pointer;transition:all 0.18s;white-space:nowrap;letter-spacing:0.02em}
+.tab.active{background:var(--accent);color:#0f172a}
+.tab:hover:not(.active){background:var(--surface2);color:var(--text)}
+
+/* TIMER */
+.timer-card{margin:0 1.2rem 1rem;background:var(--surface);border-radius:14px;padding:1rem 1.2rem;display:flex;align-items:center;gap:1rem}
+.timer-num{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:500;color:var(--text);min-width:88px;transition:color 0.2s}
+.timer-num.running{color:var(--accent)}
+.timer-num.warning{color:var(--red)}
+.timer-right{display:flex;flex-direction:column;gap:0.5rem;flex:1}
+.timer-presets{display:flex;gap:0.35rem;flex-wrap:wrap}
+.preset{font-family:'DM Mono',monospace;font-size:0.68rem;padding:0.3rem 0.6rem;background:var(--surface2);border:none;border-radius:6px;color:var(--sub);cursor:pointer;transition:all 0.15s}
+.preset.sel{background:var(--accent-dim);color:var(--accent)}
+.preset:hover:not(.sel){color:var(--text)}
+.timer-btns{display:flex;gap:0.4rem}
+.tbtn{font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;padding:0.4rem 1rem;border:none;border-radius:8px;cursor:pointer;transition:all 0.15s}
+.tbtn.primary{background:var(--accent);color:#0f172a}
+.tbtn.primary:hover{background:#93c5fd}
+.tbtn.secondary{background:var(--surface2);color:var(--sub)}
+.tbtn.secondary:hover{color:var(--text)}
+
+/* PHASE */
+.phase-label{padding:0.7rem 1.2rem 0.4rem;font-size:0.68rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:var(--sub);display:flex;align-items:center;gap:0.5rem}
+.phase-label.warm{color:var(--orange)}
+.phase-label.stretch{color:var(--purple)}
+.phase-label.main{color:var(--accent)}
+
+/* EXERCISE */
+.ex-list{display:flex;flex-direction:column;gap:0.4rem;padding:0 1.2rem;margin-bottom:0.4rem}
+.ex{display:grid;grid-template-columns:36px 1fr auto;align-items:start;gap:0.6rem 0.8rem;background:var(--surface);border-radius:12px;padding:0.85rem 0.9rem;cursor:pointer;transition:background 0.15s}
+.ex:hover{background:var(--surface2)}
+.ex.done{opacity:0.5}
+.ex.done .ex-name{text-decoration:line-through}
+
+.check{width:34px;height:34px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all 0.15s;font-size:0.95rem;color:transparent;margin-top:1px}
+.check:hover{background:var(--border)}
+.ex.done .check{background:var(--green-dim);color:var(--green)}
+
+.ex-body{display:flex;flex-direction:column;gap:0.25rem;min-width:0}
+.ex-name{font-size:0.9rem;font-weight:500;line-height:1.25}
+.ex-meta{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;margin-top:0.1rem}
+.badge{font-family:'DM Mono',monospace;font-size:0.65rem;font-weight:500;padding:0.15rem 0.5rem;border-radius:20px;white-space:nowrap}
+.badge.tool{background:var(--surface2);color:var(--sub)}
+.badge.sets{background:var(--accent-dim);color:var(--accent)}
+.badge.rec{background:rgba(74,222,128,0.1);color:#4ade80}
+
+/* weight */
+.w-wrap{display:flex;align-items:center;gap:0.2rem;flex-shrink:0;padding-top:2px}
+.ex.noweight .w-wrap{visibility:hidden}
+.w-input{font-family:'DM Mono',monospace;font-size:0.8rem;font-weight:500;width:50px;padding:0.3rem 0.4rem;background:var(--surface2);border:1.5px solid transparent;border-radius:8px;color:var(--text);text-align:center;transition:border 0.15s;-moz-appearance:textfield}
+.w-input::-webkit-outer-spin-button,.w-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.w-input:focus{outline:none;border-color:var(--accent)}
+.w-input::placeholder{color:var(--border)}
+.w-unit{font-size:0.68rem;color:var(--sub);font-family:'DM Mono',monospace}
+
+/* warm/stretch card style */
+.ex.warm-card{background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.12)}
+.ex.warm-card:hover{background:rgba(251,146,60,0.1)}
+.ex.stretch-card{background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.12)}
+.ex.stretch-card:hover{background:rgba(192,132,252,0.1)}
+
+.day{display:none}
+.day.active{display:block}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:100;align-items:flex-end;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+@media(min-width:520px){.overlay{align-items:center}}
+.modal{background:var(--surface);width:100%;max-width:460px;border-radius:20px;max-height:85vh;overflow-y:auto;animation:up 0.22s ease}
+@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.modal-head{padding:1.2rem 1.4rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--border)}
+.modal-title{font-size:1rem;font-weight:600;line-height:1.3}
+.modal-close{background:var(--surface2);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sub);font-size:1rem;transition:all 0.15s;flex-shrink:0}
+.modal-close:hover{background:var(--border);color:var(--text)}
+.modal-body{padding:1.2rem 1.4rem 1.5rem}
+.loading{display:flex;align-items:center;gap:0.75rem;color:var(--sub);font-size:0.82rem;padding:0.5rem 0}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sect{margin-bottom:1.1rem}
+.sect-label{font-size:0.67rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--sub);margin-bottom:0.5rem}
+.sect-text{font-size:0.87rem;line-height:1.7;color:#c8cdd6}
+.muscles{display:flex;flex-wrap:wrap;gap:0.35rem}
+.m-tag{font-size:0.72rem;padding:0.25rem 0.65rem;background:var(--accent-dim);color:var(--accent);border-radius:20px}
+.tips{list-style:none;display:flex;flex-direction:column;gap:0.5rem}
+.tips li{font-size:0.85rem;color:#c8cdd6;padding-left:1rem;position:relative;line-height:1.55}
+.tips li::before{content:'·';position:absolute;left:0;color:var(--accent);font-size:1.2rem;line-height:1}
+.err-box{background:rgba(248,113,113,0.08);border-radius:10px;padding:0.75rem 0.9rem;font-size:0.83rem;color:var(--red);margin-bottom:1.1rem}
+.err-label{font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.3rem;opacity:0.7}
+.yt-btn{display:flex;align-items:center;gap:0.8rem;background:var(--surface2);border-radius:12px;padding:0.85rem 1rem;text-decoration:none;color:var(--text);transition:background 0.15s;margin-top:1.2rem}
+.yt-btn:hover{background:var(--border)}
+.yt-ico{width:34px;height:34px;background:#ef4444;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.yt-ico svg{width:16px;height:16px;fill:white;margin-left:2px}
+.yt-label{font-size:0.85rem;font-weight:500}
+.yt-sub{font-size:0.72rem;color:var(--sub);margin-top:0.1rem}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Allenamento Mattutino</h1>
+  <p>Livello intermedio · 5 giorni · Manubri, panca, corpo libero</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showDay(0)">Lun</button>
+  <button class="tab" onclick="showDay(1)">Mar</button>
+  <button class="tab" onclick="showDay(2)">Mer</button>
+  <button class="tab" onclick="showDay(3)">Gio</button>
+  <button class="tab" onclick="showDay(4)">Ven</button>
+</div>
+
+<div class="timer-card">
+  <div class="timer-num" id="timerNum">01:30</div>
+  <div class="timer-right">
+    <div class="timer-presets">
+      <button class="preset" onclick="setPreset(45,this)">45s</button>
+      <button class="preset" onclick="setPreset(60,this)">60s</button>
+      <button class="preset sel" onclick="setPreset(90,this)">90s</button>
+    </div>
+    <div class="timer-btns">
+      <button class="tbtn primary" id="startBtn" onclick="toggleTimer()">Start</button>
+      <button class="tbtn secondary" onclick="resetTimer()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- LUNEDÌ -->
+<div class="day active" id="day-0">
+  <div class="phase-label warm">🔥 Riscaldamento specifico</div>
+  <div class="ex-list">
+    <div class="ex warm-card noweight" onclick="openInfo('Circonduzioni delle braccia riscaldamento spalle','shoulder arm circles warm up shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Circonduzioni braccia</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">Mobilità</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex warm-card noweight" onclick="openInfo('Push-ups facilitati riscaldamento petto','push ups warm up tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Push-ups facilitati</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">2 × 15</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label main">💪 Spinta — Petto, Spalle, Tricipiti</div>
+  <div class="ex-list">
+    <div class="ex" onclick="openInfo('Spinte panca piana con manubri petto','dumbbell bench press tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Spinte panca piana</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">4 × 10</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Piegamenti push-ups petto a corpo libero','push ups tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Piegamenti (Push-ups)</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">3 × Max</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Spinte panca inclinata 30 gradi manubri petto','incline dumbbell press tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Spinte panca inclinata 30°</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Lento avanti seduto manubri spalle overhead press','dumbbell seated overhead press tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Lento avanti seduto</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 10</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Dips su panca tricipiti corpo libero','tricep bench dips tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Dips su panca</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Crunch su panca addominali alti','crunch bench abs tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Addome Alto — Crunch su panca</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">4 × 20</span><span class="badge rec">Rec 45"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label stretch">🧘 Stretching finale — 10 min</div>
+  <div class="ex-list">
+    <div class="ex stretch-card noweight" onclick="openInfo('Stretching pettorali e tricipiti cool down','chest tricep stretch cool down shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Stretching Pettorali e Tricipiti</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">10 min</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MARTEDÌ -->
+<div class="day" id="day-1">
+  <div class="phase-label warm">🔥 Riscaldamento specifico</div>
+  <div class="ex-list">
+    <div class="ex warm-card noweight" onclick="openInfo('Mobilità anche riscaldamento gambe','hip mobility warm up tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Mobilità anche</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">Mobilità</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex warm-card noweight" onclick="openInfo('Squat a corpo libero riscaldamento gambe','bodyweight squat tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Squat corpo libero</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">2 × 20</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label main">💪 Gambe & Glutei</div>
+  <div class="ex-list">
+    <div class="ex" onclick="openInfo('Goblet Squat con manubrio gambe quadricipiti','goblet squat tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Goblet Squat</div><div class="ex-meta"><span class="badge tool">Manubrio</span><span class="badge sets">4 × 12</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Affondi bulgari piede su panca glutei','bulgarian split squat tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Affondi Bulgari — piede su panca</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">3 × 10 / lato</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Stacchi gambe tese manubri femorali','stiff leg deadlift dumbbell tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Stacchi gambe tese</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Step-up su panca gambe glutei','step up bench tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Step-up su panca</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">3 × 12 / lato</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Sissy Squat corpo libero quadricipiti','sissy squat tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Sissy Squat</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">3 × 15</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Leg Raises su panca addominali bassi','leg raises bench abs tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Addome Basso — Leg Raises su panca</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">4 × 15</span><span class="badge rec">Rec 45"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label stretch">🧘 Stretching finale — 10 min</div>
+  <div class="ex-list">
+    <div class="ex stretch-card noweight" onclick="openInfo('Stretching quadricipiti femorali glutei cool down','quad hamstring glute stretch cool down shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Stretching Quadricipiti, Femorali e Glutei</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">10 min</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MERCOLEDÌ -->
+<div class="day" id="day-2">
+  <div class="phase-label warm">🔥 Riscaldamento specifico</div>
+  <div class="ex-list">
+    <div class="ex warm-card noweight" onclick="openInfo('Mobilità scapolare riscaldamento schiena','scapular mobility warm up shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Mobilità scapolare</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">Mobilità</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex warm-card" onclick="openInfo('Rematore leggero manubrio attivazione schiena','light dumbbell row warm up shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Rematore leggero (attivazione)</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">2 × 15</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label main">💪 Tirata — Schiena & Bicipiti</div>
+  <div class="ex-list">
+    <div class="ex" onclick="openInfo('Rematore un braccio su panca manubrio schiena','one arm dumbbell row tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Rematore un braccio su panca</div><div class="ex-meta"><span class="badge tool">Manubrio</span><span class="badge sets">4 × 10 / lato</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Rematore due manubri busto a 45 gradi schiena','dumbbell bent over row tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Rematore due manubri (busto 45°)</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Chest Supported Row panca inclinata schiena manubri','chest supported row tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Chest Supported Row — panca incl.</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Alzate posteriori busto flesso deltoide posteriore manubri','rear delt fly tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Alzate posteriori (busto flesso)</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 15</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Curl bicipiti su panca inclinata manubri','incline dumbbell curl tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Curl bicipiti panca inclinata</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Russian Twist addominali obliqui core','russian twist tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Addome Obliqui — Russian Twist</div><div class="ex-meta"><span class="badge tool">Manubrio</span><span class="badge sets">4 × 30 tot</span><span class="badge rec">Rec 45"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label stretch">🧘 Stretching finale — 10 min</div>
+  <div class="ex-list">
+    <div class="ex stretch-card noweight" onclick="openInfo('Stretching dorsali e bicipiti cool down','back bicep stretch cool down shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Stretching Dorsali e Bicipiti</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">10 min</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- GIOVEDÌ -->
+<div class="day" id="day-3">
+  <div class="phase-label warm">🔥 Riscaldamento specifico</div>
+  <div class="ex-list">
+    <div class="ex warm-card noweight" onclick="openInfo('Mobilità collo e spalle riscaldamento','neck shoulder mobility warm up shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Mobilità collo e spalle</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">Mobilità</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex warm-card noweight" onclick="openInfo('Pike push-ups facilitati riscaldamento spalle','pike push ups warm up shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Pike Push-ups facilitati</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">2 serie</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label main">💪 Spalle & Focus corpo libero</div>
+  <div class="ex-list">
+    <div class="ex noweight" onclick="openInfo('Pike push-ups sedere alto spalle corpo libero','pike push ups tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Pike Push-ups (sedere alto)</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">4 × 8–10</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Alzate laterali manubri deltoide medio spalle','lateral raise tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Alzate laterali</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 15</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Piegamenti declinati piedi su panca petto alto','decline push ups bench tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Piegamenti declinati — piedi su panca</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Scrollate manubri trapezio shrug','dumbbell shrug trapezius tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Scrollate (Shrug)</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 15</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Dips su panca focus tricipiti','tricep bench dips tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Dips su panca (focus tricipiti)</div><div class="ex-meta"><span class="badge tool">Panca</span><span class="badge sets">3 × 15</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Plank a terra core isometrico stabilità','plank tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Core — Plank a terra</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">4 × 60 sec</span><span class="badge rec">Rec 45"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label stretch">🧘 Stretching finale — 10 min</div>
+  <div class="ex-list">
+    <div class="ex stretch-card noweight" onclick="openInfo('Stretching deltoidi trapezi cobra addome','shoulder trap cobra stretch cool down shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Stretching Deltoidi, Trapezi e Cobra</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">10 min</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- VENERDÌ -->
+<div class="day" id="day-4">
+  <div class="phase-label warm">🔥 Riscaldamento specifico</div>
+  <div class="ex-list">
+    <div class="ex warm-card noweight" onclick="openInfo('Jumping Jacks cardio riscaldamento full body','jumping jacks warm up tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Jumping Jacks</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">3 min</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex warm-card noweight" onclick="openInfo('Mobilità generale full body warm up','full body mobility warm up shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Mobilità generale</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">Mobilità</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label main">💪 Full Body & Condizionamento</div>
+  <div class="ex-list">
+    <div class="ex" onclick="openInfo('Affondi alternati con manubri gambe glutei','alternating lunges dumbbell tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Affondi alternati</div><div class="ex-meta"><span class="badge tool">Manubri / C.L.</span><span class="badge sets">3 × 20 tot</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Floor Press spinte a terra manubri petto','floor press dumbbell tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Floor Press — spinte a terra</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Burpees corpo libero condizionamento metabolico','burpee tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Burpees</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">3 × 10</span><span class="badge rec">Rec 90"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex" onclick="openInfo('Hammer Curl manubri bicipiti brachiale presa neutra','hammer curl tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Hammer Curl</div><div class="ex-meta"><span class="badge tool">Manubri</span><span class="badge sets">3 × 12</span><span class="badge rec">Rec 60"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="kg" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('Mountain Climbers core cardio corpo libero','mountain climbers tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Mountain Climbers</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">3 × 45 sec</span><span class="badge rec">Rec 45"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+    <div class="ex noweight" onclick="openInfo('V-Ups addominali completi core','v ups abs tutorial shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Addome Completo — V-Ups</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">4 × 12</span><span class="badge rec">Rec 45"</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+
+  <div class="phase-label stretch">🧘 Stretching finale — 10 min</div>
+  <div class="ex-list">
+    <div class="ex stretch-card noweight" onclick="openInfo('Stretching allungamento totale ileo psoas cool down','full body ileo psoas stretch cool down shorts')">
+      <div class="check" onclick="tog(event,this)">✓</div>
+      <div class="ex-body"><div class="ex-name">Allungamento totale e Ileo-psoas</div><div class="ex-meta"><span class="badge tool">Corpo Libero</span><span class="badge sets">10 min</span></div></div>
+      <div class="w-wrap"><input class="w-input" type="number" placeholder="—" onclick="sp(event)" min="0" step="0.5"><span class="w-unit">kg</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeBg(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="mTitle">—</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="mBody">
+      <div class="loading"><div class="spinner"></div>Carico informazioni...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* TABS */
+function showDay(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.day').forEach((d,j)=>d.classList.toggle('active',i===j));
+}
+
+/* PERSISTENZA */
+document.querySelectorAll('.ex').forEach((ex,i)=>{ex.dataset.id='ex_'+i;});
+
+function save(){
+  const state={};
+  document.querySelectorAll('.ex').forEach(ex=>{
+    const inp=ex.querySelector('.w-input');
+    state[ex.dataset.id]={done:ex.classList.contains('done'),weight:inp?inp.value:''};
+  });
+  localStorage.setItem('allenamento_v1',JSON.stringify(state));
+}
+
+function load(){
+  try{
+    const raw=localStorage.getItem('allenamento_v1');
+    if(!raw)return;
+    const state=JSON.parse(raw);
+    document.querySelectorAll('.ex').forEach(ex=>{
+      const s=state[ex.dataset.id];
+      if(!s)return;
+      if(s.done)ex.classList.add('done');
+      const inp=ex.querySelector('.w-input');
+      if(inp&&s.weight)inp.value=s.weight;
+    });
+  }catch(e){}
+}
+load();
+
+/* CHECK */
+function tog(e,el){e.stopPropagation();el.closest('.ex').classList.toggle('done');save();}
+
+/* WEIGHT */
+function sp(e){e.stopPropagation();}
+document.querySelectorAll('.w-input').forEach(i=>{
+  i.addEventListener('click',e=>e.stopPropagation());
+  i.addEventListener('focus',e=>e.stopPropagation());
+  i.addEventListener('pointerdown',e=>e.stopPropagation());
+  i.addEventListener('input',()=>save());
+  i.addEventListener('change',()=>save());
+});
+
+/* TIMER */
+let preset=90,rem=90,running=false,iv=null;
+const numEl=document.getElementById('timerNum');
+const startEl=document.getElementById('startBtn');
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function paint(){
+  numEl.textContent=fmt(rem);
+  numEl.className='timer-num'+(running?' running':'')+(rem<=10&&rem>0?' warning':'');
+  startEl.textContent=running?'Pausa':'Start';
+}
+function setPreset(s,el){
+  document.querySelectorAll('.preset').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  preset=s;rem=s;running=false;clearInterval(iv);paint();
+}
+function toggleTimer(){
+  if(running){clearInterval(iv);running=false;paint();return;}
+  if(rem===0)rem=preset;
+  running=true;
+  iv=setInterval(()=>{rem--;paint();if(rem<=0){clearInterval(iv);running=false;beep();}},1000);
+  paint();
+}
+function resetTimer(){clearInterval(iv);running=false;rem=preset;paint();}
+function beep(){
+  try{
+    const c=new(window.AudioContext||window.webkitAudioContext)();
+    const o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.frequency.value=900;g.gain.setValueAtTime(0.25,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.5);
+    o.start();o.stop(c.currentTime+0.5);
+  }catch(e){}
+}
+paint();
+
+/* MODAL */
+const cache={};
+async function openInfo(name,ytQ){
+  document.getElementById('mTitle').textContent=name;
+  document.getElementById('mBody').innerHTML='<div class="loading"><div class="spinner"></div>Carico informazioni...</div>';
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  if(cache[name]){render(cache[name]);return;}
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:600,
+        messages:[{role:'user',content:`Personal trainer. Esercizio: "${name}". Solo JSON valido, nessun markdown:\n{"desc":"2 frasi italiane descrittive","muscoli":["m1","m2","m3"],"consigli":["c1","c2","c3"],"errore":"1 frase sull errore comune"}`}]
+      })
+    });
+    const d=await r.json();
+    const txt=(d.content||[]).map(b=>b.text||'').join('');
+    const p=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    p._n=name;p._yt=ytQ;cache[name]=p;render(p);
+  }catch(e){
+    document.getElementById('mBody').innerHTML='<p style="color:var(--sub);font-size:0.85rem">Errore nel caricamento. Riprova.</p>';
+  }
+}
+function render(d){
+  const ytUrl='https://www.youtube.com/results?search_query='+encodeURIComponent(d._yt||d._n+' tutorial');
+  const mm=(d.muscoli||[]).map(m=>`<span class="m-tag">${m}</span>`).join('');
+  const tt=(d.consigli||[]).map(c=>`<li>${c}</li>`).join('');
+  document.getElementById('mBody').innerHTML=`
+    <div class="sect"><div class="sect-label">Muscoli coinvolti</div><div class="muscles">${mm}</div></div>
+    <div class="sect"><div class="sect-label">Come si esegue</div><div class="sect-text">${d.desc||''}</div></div>
+    ${d.errore?`<div class="err-box"><div class="err-label">⚠ Errore comune</div>${d.errore}</div>`:''}
+    <div class="sect"><div class="sect-label">Consigli tecnici</div><ul class="tips">${tt}</ul></div>
+    <a class="yt-btn" href="${ytUrl}" target="_blank" rel="noopener">
+      <div class="yt-ico"><svg viewBox="0 0 24 24"><path d="M10 15l5.19-3L10 9v6m11.56-7.83A2.76 2.76 0 0 0 19.62 5.2C17.88 4.75 12 4.75 12 4.75s-5.88 0-7.62.45A2.76 2.76 0 0 0 2.44 7.17 29 29 0 0 0 2 12a29 29 0 0 0 .44 5.33 2.76 2.76 0 0 0 1.94 1.95c1.74.45 7.62.45 7.62.45s5.88 0 7.62-.45a2.76 2.76 0 0 0 1.94-1.95A29 29 0 0 0 22 12a29 29 0 0 0-.44-5.83z"/></svg></div>
+      <div><div class="yt-label">Guarda su YouTube Shorts</div><div class="yt-sub">${d._n}</div></div>
+    </a>`;
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');document.body.style.overflow='';}
+function closeBg(e){if(e.target===document.getElementById('overlay'))closeModal();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+</script>
+</body>
+</html>
